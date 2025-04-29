@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
@@ -32,6 +33,18 @@ class _CameraAppState extends State<CameraApp> {
   List<CameraDescription> _cameras=[];
   int _currentCameraIndex=0;
   bool _isCameraInitialized = false;
+  final ValueNotifier<double> _scaleNotifier=ValueNotifier(1.0);
+  final AudioPlayer _player=AudioPlayer();
+  ResolutionPreset _selectedResolution = ResolutionPreset.medium;
+  final Map<String, ResolutionPreset> resolutionOptions = {
+    'Low  352x288': ResolutionPreset.low,
+    'Medium   720x480': ResolutionPreset.medium,
+    'High   1280x720': ResolutionPreset.high,
+    'Very High    1920x1080': ResolutionPreset.veryHigh,
+    'Ultra High   3840x2160': ResolutionPreset.ultraHigh,
+    'Max': ResolutionPreset.max,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -47,12 +60,13 @@ class _CameraAppState extends State<CameraApp> {
 
 
 //function to init camera
-  Future<void> _initCamera(int cameraIndex) async {
+  Future<void> _initCamera(int cameraIndex,{ResolutionPreset resolution=ResolutionPreset.high}) async {
     _cameras = await availableCameras(); // Load available cameras
 
     controller = CameraController(
       _cameras[cameraIndex],
-      ResolutionPreset.high,
+      resolution,
+      enableAudio: true,
     );
 
     await controller.initialize();
@@ -77,7 +91,9 @@ class _CameraAppState extends State<CameraApp> {
     setState(() {}); // Rebuild UI with new camera
   }
 
-
+  Future<void> playShutterSound() async {
+    await _player.play(AssetSource('shutter.mp3'));
+  }
 
   //function to capture photo and save into CameraApp folder
   Future<void> _capturePhoto(BuildContext context, CameraController controller) async {
@@ -92,7 +108,7 @@ class _CameraAppState extends State<CameraApp> {
 
       // Take the picture
       final XFile photo = await controller.takePicture();
-
+      playShutterSound();
       // Create a folder in Pictures
       final String dirPath = '/storage/emulated/0/Pictures/CameraApp';
       final Directory dir = Directory(dirPath);
@@ -187,7 +203,7 @@ class _CameraAppState extends State<CameraApp> {
 
     return MaterialApp(
       home: Scaffold(
-        body: Column(
+        body: _isCameraInitialized?Column(
           children: [
             Container(
               decoration: BoxDecoration(
@@ -221,34 +237,55 @@ class _CameraAppState extends State<CameraApp> {
                       color: Colors.white,
                     ),
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Add your shutter button functionality here
-                      if(camera==false)
-                        _capturePhoto(context,controller);
+                  Builder(
+                    builder: (context) {
+                      return ElevatedButton(
+                        onPressed: () {
+                          // Add your shutter button functionality here
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                backgroundColor: Colors.grey[900],
+                                title: Text('Choose Resolution',style: TextStyle(color: Colors.white,fontWeight:FontWeight.bold),),
+                                content: SingleChildScrollView(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: resolutionOptions.entries.map((entry) {
+                                      return Card(
+                                        color: _selectedResolution==entry.value?Colors.blueGrey[700]:Colors.grey[850],
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10)
+                                        ),
+                                        child: ListTile(
+                                          leading: getResolutionIcon(entry.value),
+                                          trailing: _selectedResolution==entry.value?Icon(Icons.check_circle,color: Colors.green,):null,
+                                          title: Text(entry.key,style: TextStyle(color: Colors.white),),
+                                          onTap: () {
+                                            Navigator.pop(context); // Close popup
+                                            _selectedResolution = entry.value;
+                                            _initCamera(_currentCameraIndex,resolution: entry.value); // Re-initialize camera
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                            shape: CircleBorder(),
+                            padding: EdgeInsets.all(10),
 
-                      setState(() {
-                        camera=false;
-                      });
-
-                    },
-                    style: ElevatedButton.styleFrom(
-                        shape: CircleBorder(),
-                        padding: EdgeInsets.all(10),
-
-                        backgroundColor: Colors.transparent// Button size
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.picture_as_pdf,
-                          size: 25.0,
-                          color: Colors.white,
+                            backgroundColor: Colors.transparent// Button size
                         ),
-                        Text("1080p",style: TextStyle(fontSize: 12),)
-                      ],
-                    ),
+                        child: getResolutionIcon(_selectedResolution),
+
+                      );
+                    }
                   ),
                   ElevatedButton(
                     onPressed: () {
@@ -294,7 +331,10 @@ class _CameraAppState extends State<CameraApp> {
                 ],
               ),
             ),
-            Expanded(child: _isCameraInitialized?CameraPreview(controller):const Center(child: CircularProgressIndicator(),)),
+            Container(
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height*0.74,
+                child: CameraPreview(controller)),
             Container(
               decoration: BoxDecoration(
                   color: Colors.black
@@ -328,38 +368,50 @@ class _CameraAppState extends State<CameraApp> {
                       color: Colors.white,
                     ),
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Add your shutter button functionality here
-                      print("Shutter button pressed!");
-                      if(camera)
-                      {
-                        _capturePhoto(context,controller);
-                      }
-                      else if(camera==false)
-                      {
-                        _stoprecording(context, controller);
-                      }
-                      setState(() {
-                        camera=true;
-                      });
+                  ValueListenableBuilder<double>(
+                    valueListenable: _scaleNotifier,
+                    builder: (context,scale,child) {
+                      return AnimatedScale(
+                        scale: scale,
+                        duration: Duration(milliseconds: 100),
+                        child: ElevatedButton(
+                          onPressed: () async{
+                            // Add your shutter button functionality here
+                            _scaleNotifier.value=0.85;
+                            await Future.delayed(Duration(milliseconds: 100));
+                            _scaleNotifier.value=1.0;
+                            print("Shutter button pressed!");
+                            if(camera)
+                            {
+                              _capturePhoto(context,controller);
+                            }
+                            else if(camera==false)
+                            {
+                              _stoprecording(context, controller);
+                            }
+                            setState(() {
+                              camera=true;
+                            });
 
-                    },
-                    style: ElevatedButton.styleFrom(
-                      shape: CircleBorder(
-                          side: BorderSide(
-                              color: camera?Colors.white:Colors.red,
-                              width: 1.0
-                          )
-                      ),
-                      backgroundColor: Colors.transparent,
-                      padding: EdgeInsets.all(20), // Button size
-                    ),
-                    child: Icon(
-                      camera?Icons.camera_alt:Icons.square,
-                      size: 30.0,
-                      color: camera?Colors.white:Colors.red,
-                    ),
+                          },
+                          style: ElevatedButton.styleFrom(
+                            shape: CircleBorder(
+                                side: BorderSide(
+                                    color: camera?Colors.white:Colors.red,
+                                    width: 1.0
+                                )
+                            ),
+                            backgroundColor: Colors.transparent,
+                            padding: EdgeInsets.all(20), // Button size
+                          ),
+                          child: Icon(
+                            camera?Icons.camera_alt:Icons.square,
+                            size: 30.0,
+                            color: camera?Colors.white:Colors.red,
+                          ),
+                        ),
+                      );
+                    }
                   ),
                   ElevatedButton(
                     onPressed: () async{
@@ -383,11 +435,34 @@ class _CameraAppState extends State<CameraApp> {
               ),
             )
           ],
-        ),
+        ):Center(child: const CircularProgressIndicator()),
       ),
     );
 
 
 
   }
+
+
+  Icon getResolutionIcon(ResolutionPreset resolution) {
+    switch (resolution) {
+      case ResolutionPreset.low:
+        return Icon(Icons.low_priority, color: Colors.blue,size: 25,);
+      case ResolutionPreset.medium:
+        return Icon(Icons.picture_in_picture_alt, color: Colors.green,size: 25,);
+      case ResolutionPreset.high:
+        return Icon(Icons.high_quality, color: Colors.orange,size: 25,);
+      case ResolutionPreset.veryHigh:
+        return Icon(Icons.photo_size_select_actual, color: Colors.orange,size: 25,);
+      case ResolutionPreset.ultraHigh:
+        return Icon(Icons.camera_enhance, color: Colors.purple,size: 25,);
+      case ResolutionPreset.max:
+        return Icon(Icons.home_max, color: Colors.red,size: 25,);
+      default:
+        return Icon(Icons.camera_alt, color: Colors.white,size: 25,);
+    }
+  }
+
+
+
 }
