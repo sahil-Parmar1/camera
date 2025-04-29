@@ -5,15 +5,10 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-late List<CameraDescription> _cameras;
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-
-  //SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
-  _cameras = await availableCameras();
   runApp(const CameraApp());
 }
 
@@ -44,7 +39,7 @@ class _CameraAppState extends State<CameraApp> {
     'Ultra High   3840x2160': ResolutionPreset.ultraHigh,
     'Max': ResolutionPreset.max,
   };
-
+ FlashMode _flashMode=FlashMode.off;
   @override
   void initState() {
     super.initState();
@@ -95,8 +90,40 @@ class _CameraAppState extends State<CameraApp> {
     await _player.play(AssetSource('shutter.mp3'));
   }
 
+  //function to flash mode
+  void _toggleFlash() async {
+    FlashMode newMode;
+    switch (_flashMode) {
+      case FlashMode.off:
+        newMode = FlashMode.auto;
+        break;
+      case FlashMode.auto:
+        newMode = FlashMode.torch;
+        break;
+      case FlashMode.torch:
+        newMode = FlashMode.off;
+        break;
+      default:
+        newMode = FlashMode.off;
+    }
+    setState(() {
+      _flashMode = newMode;
+    });
+  }
+  Icon _getFlashIcon() {
+    switch (_flashMode) {
+      case FlashMode.off:
+        return Icon(Icons.flash_off,size: 25,color: Colors.white);
+      case FlashMode.auto:
+        return Icon(Icons.flash_auto,size: 25,color: Colors.yellow);
+      case FlashMode.torch:
+        return Icon(Icons.flash_on,size: 25,color: Colors.yellow);
+      default:
+        return Icon(Icons.flash_off,size: 25,color: Colors.white);
+    }
+  }
   //function to capture photo and save into CameraApp folder
-  Future<void> _capturePhoto(BuildContext context, CameraController controller) async {
+  Future<void> _capturePhoto(BuildContext context, CameraController controller,{bool second=false}) async {
     try {
       if (!controller.value.isInitialized) return;
 
@@ -107,8 +134,15 @@ class _CameraAppState extends State<CameraApp> {
       ].request();
 
       // Take the picture
+      if(second==false)
+      await controller.setFlashMode(_flashMode);
       final XFile photo = await controller.takePicture();
-      playShutterSound();
+      if(second==false)
+        {
+          playShutterSound();
+          await controller.setFlashMode(FlashMode.off);
+        }
+
       // Create a folder in Pictures
       final String dirPath = '/storage/emulated/0/Pictures/CameraApp';
       final Directory dir = Directory(dirPath);
@@ -152,6 +186,7 @@ class _CameraAppState extends State<CameraApp> {
       ].request();
 
       //start recording
+      await controller.setFlashMode(_flashMode);
       await controller.startVideoRecording();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("recording started...")));
     }
@@ -202,6 +237,7 @@ class _CameraAppState extends State<CameraApp> {
   Widget build(BuildContext context) {
 
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: _isCameraInitialized?Column(
           children: [
@@ -216,13 +252,7 @@ class _CameraAppState extends State<CameraApp> {
                 children: [
                   ElevatedButton(
                     onPressed: () {
-                      // Add your shutter button functionality here
-                      if(camera==false)
-                        _capturePhoto(context,controller);
-
-                      setState(() {
-                        camera=false;
-                      });
+                      _toggleFlash();
 
                     },
                     style: ElevatedButton.styleFrom(
@@ -231,11 +261,7 @@ class _CameraAppState extends State<CameraApp> {
 
                         backgroundColor: Colors.transparent// Button size
                     ),
-                    child: Icon(
-                      Icons.flash_off_sharp,
-                      size: 30.0,
-                      color: Colors.white,
-                    ),
+                    child: _getFlashIcon(),
                   ),
                   Builder(
                     builder: (context) {
@@ -348,7 +374,7 @@ class _CameraAppState extends State<CameraApp> {
                     onPressed: () {
                       // Add your shutter button functionality here
                       if(camera==false)
-                        _capturePhoto(context,controller);
+                        _capturePhoto(context,controller,second: true);
                       else if(camera==true)
                         _startrecording(context, controller);
                       setState(() {
