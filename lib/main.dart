@@ -42,6 +42,8 @@ class _CameraAppState extends State<CameraApp> {
  FlashMode _flashMode=FlashMode.off;
  String _timer='none';
  int _timersecond=0;
+ Offset? _tapPosition;
+
   @override
   void initState() {
     super.initState();
@@ -253,7 +255,31 @@ class _CameraAppState extends State<CameraApp> {
     }
   }
 
+  //function for tapposition and focus
 
+  void _onTapDown(TapDownDetails details, BoxConstraints constraints) async {
+    final tapPos = details.localPosition;
+
+    final normalizedOffset = Offset(
+      tapPos.dx / constraints.maxWidth,
+      tapPos.dy / constraints.maxHeight,
+    );
+
+    setState(() {
+      _tapPosition = tapPos;
+    });
+
+    // Set focus and exposure
+    await controller.setFocusPoint(normalizedOffset);
+    await controller.setExposurePoint(normalizedOffset);
+
+    // Optional: Add small delay then remove tap marker
+    Future.delayed(const Duration(seconds: 1), () {
+      setState(() {
+        _tapPosition = null;
+      });
+    });
+  }
   @override
   Widget build(BuildContext context) {
 
@@ -390,7 +416,32 @@ class _CameraAppState extends State<CameraApp> {
             Container(
                 width: MediaQuery.of(context).size.width,
                 height: MediaQuery.of(context).size.height*0.74,
-                child: CameraPreview(controller)),
+                child: LayoutBuilder(
+                  builder: (context,constraints) {
+                    return GestureDetector(
+                        onTapDown: (details)=>_onTapDown(details, constraints),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            CameraPreview(controller),
+
+                            //Tap focus indicator
+                            if(_tapPosition!=null)
+                              Positioned(
+                                  left: _tapPosition!.dx - 20,
+                                  top: _tapPosition!.dy - 20,
+                                  child: Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.yellow, width: 1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ))
+                          ],
+                        ));
+                  }
+                )),
             _timersecond<=0?Container(
               decoration: BoxDecoration(
                   color: Colors.black
