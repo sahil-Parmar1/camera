@@ -40,6 +40,8 @@ class _CameraAppState extends State<CameraApp> {
     'Max': ResolutionPreset.max,
   };
  FlashMode _flashMode=FlashMode.off;
+ String _timer='none';
+ int _timersecond=0;
   @override
   void initState() {
     super.initState();
@@ -124,6 +126,25 @@ class _CameraAppState extends State<CameraApp> {
   }
   //function to capture photo and save into CameraApp folder
   Future<void> _capturePhoto(BuildContext context, CameraController controller,{bool second=false}) async {
+    if(second==false)
+      {
+        if(_timer=="3s")
+          _timersecond=3;
+        else if(_timer=="5s")
+          _timersecond=5;
+        else if(_timer=="10s")
+          _timersecond=10;
+        else
+          _timersecond=0;
+
+        for(int i=_timersecond;i>0;i--)
+        {
+          await Future.delayed(Duration(seconds: 1));
+          _timersecond--;
+          setState(() {});
+        }
+      }
+
     try {
       if (!controller.value.isInitialized) return;
 
@@ -313,28 +334,37 @@ class _CameraAppState extends State<CameraApp> {
                       );
                     }
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Add your shutter button functionality here
-                      if(camera==false)
-                        _capturePhoto(context,controller);
+                  Builder(
+                      builder: (context) {
+                        return ElevatedButton(
+                          onPressed: () {
+                            // Add your shutter button functionality here
+                            if(_timer=='none')
+                              _timer='3s';
+                            else if(_timer=='3s')
+                              _timer='5s';
+                            else if(_timer=='5s')
+                              _timer='10s';
+                            else
+                              _timer='none';
+                            setState(() {});
+                          },
+                          style: ElevatedButton.styleFrom(
+                              shape: CircleBorder(),
+                              padding: EdgeInsets.all(10),
 
-                      setState(() {
-                        camera=false;
-                      });
+                              backgroundColor: Colors.transparent// Button size
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.timer,size: 25,),
+                              _timer!='none'?Text(_timer):SizedBox.shrink()
+                            ],
+                          ),
 
-                    },
-                    style: ElevatedButton.styleFrom(
-                        shape: CircleBorder(),
-                        padding: EdgeInsets.all(10),
-
-                        backgroundColor: Colors.transparent// Button size
-                    ),
-                    child: Icon(
-                      camera?Icons.videocam:Icons.camera,
-                      size: 30.0,
-                      color: Colors.white,
-                    ),
+                        );
+                      }
                   ),
                   ElevatedButton(
                     onPressed: () {
@@ -361,7 +391,7 @@ class _CameraAppState extends State<CameraApp> {
                 width: MediaQuery.of(context).size.width,
                 height: MediaQuery.of(context).size.height*0.74,
                 child: CameraPreview(controller)),
-            Container(
+            _timersecond<=0?Container(
               decoration: BoxDecoration(
                   color: Colors.black
               ),
@@ -459,7 +489,20 @@ class _CameraAppState extends State<CameraApp> {
                   ),
                 ],
               ),
-            )
+            ):Container(
+
+                decoration: BoxDecoration(
+                    color: Colors.black
+                ),
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height*0.14,
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text("${_timersecond}",style: TextStyle(fontSize: 30,color: Colors.white),),
+                  ),
+                )),
           ],
         ):Center(child: const CircularProgressIndicator()),
       ),
