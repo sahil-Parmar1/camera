@@ -43,11 +43,16 @@ class _CameraAppState extends State<CameraApp> {
  String _timer='none';
  int _timersecond=0;
  Offset? _tapPosition;
+  double _currentZoom = 1.0;
+  double _baseZoom = 1.0;
+  double _minZoom = 1.0;
+  double _maxZoom = 4.0;
 
   @override
   void initState() {
     super.initState();
     _initCamera(_currentCameraIndex);
+    _initZoomLevels();
   }
 
   @override
@@ -58,6 +63,28 @@ class _CameraAppState extends State<CameraApp> {
 
 
 
+  Future<void> _initZoomLevels() async {
+    _minZoom = await controller.getMinZoomLevel();
+    _maxZoom = await controller.getMaxZoomLevel();
+
+    setState(() {}); // Update UI if needed
+  }
+  void _handleScaleStart(ScaleStartDetails details) {
+    _baseZoom = _currentZoom;
+  }
+
+  void _handleScaleUpdate(ScaleUpdateDetails details) {
+    double newZoom = _baseZoom * details.scale;
+
+    // Clamp between min and max zoom levels
+    newZoom = newZoom.clamp(_minZoom, _maxZoom);
+
+    controller.setZoomLevel(newZoom);
+    setState(() {
+      _currentZoom = newZoom;
+
+    });
+  }
 //function to init camera
   Future<void> _initCamera(int cameraIndex,{ResolutionPreset resolution=ResolutionPreset.high}) async {
     _cameras = await availableCameras(); // Load available cameras
@@ -420,6 +447,8 @@ class _CameraAppState extends State<CameraApp> {
                   builder: (context,constraints) {
                     return GestureDetector(
                         onTapDown: (details)=>_onTapDown(details, constraints),
+                        onScaleStart: _handleScaleStart,
+                        onScaleUpdate: _handleScaleUpdate,
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
@@ -437,7 +466,26 @@ class _CameraAppState extends State<CameraApp> {
                                       border: Border.all(color: Colors.yellow, width: 1),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                  ))
+                                  )),
+
+                            // Zoom Level Label
+                            if(_tapPosition!=null)
+                            Positioned(
+                              bottom: 20,
+                              right: 20,
+                              child: Container(
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  "${_currentZoom.toStringAsFixed(1)}x", // shows like 2.5x
+                                  style: TextStyle(color: Colors.white, fontSize: 18),
+                                ),
+                              ),
+                            ),
+
                           ],
                         ));
                   }
