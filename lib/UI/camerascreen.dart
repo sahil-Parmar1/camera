@@ -16,7 +16,7 @@ class CameraScreen extends ConsumerStatefulWidget
 
 class _CameraScreen extends ConsumerState<CameraScreen>
 {
-
+  final shutterScaleProvider = StateProvider<double>((ref) => 1.0);
   @override
   void initState()
   {
@@ -79,13 +79,37 @@ class _CameraScreen extends ConsumerState<CameraScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Icon(Icons.photo_library, color: Colors.white),
+                  Icon(Icons.videocam, color: Colors.white),
+                  GestureDetector(
+                      onTapDown: (_) {
+                        ref.read(shutterScaleProvider.notifier).state = 0.8; // shrink
+                      },
+                      onTapUp: (_) async {
+                        // Capture Photo
+                        await ref.read(CameraProvider.notifier).CapturePhoto();
+                        // Reset scale after tap
+                        ref.read(shutterScaleProvider.notifier).state = 1.0;
+                      },
+                      onTapCancel: () {
+                        // If tap is canceled (finger moves away), reset scale
+                        ref.read(shutterScaleProvider.notifier).state = 1.0;
+                      },
+
+                      child: Container(
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(50),
+                            border: Border.all(color: Colors.white,width: 2)
+                        ),
+                        child: AnimatedScale(
+                            scale:ref.watch(shutterScaleProvider),
+                            duration: Duration(milliseconds: 100),
+                            child: Icon(Icons.circle_outlined, color: Colors.yellow, size: 64)),
+                      )),
                   GestureDetector(
                       onTap: ()async{
-                        await ref.read(CameraProvider.notifier).CapturePhoto();
+                        await ref.read(CameraProvider.notifier).SwitchCamera();
                       },
-                      child: Icon(Icons.circle, color: Colors.white, size: 64)),
-                  Icon(Icons.cameraswitch, color: Colors.white),
+                      child: Icon(Icons.cameraswitch, color: Colors.white)),
                 ],
               ),
             ),

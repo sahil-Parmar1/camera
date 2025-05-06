@@ -25,7 +25,7 @@ class CameraNotifier extends StateNotifier<cameraState>
      await controller!.initialize();
      double minZoom=await controller!.getMinZoomLevel();
      double maxZoom=await controller!.getMaxZoomLevel();
-     state=state.copyWith(iscameraready: true,cameras: _cameras,minZoom: minZoom,maxZoom: maxZoom);
+     state=state.copyWith(currentCameraIndex: cameraIndex??0,iscameraready: true,cameras: _cameras,minZoom: minZoom,maxZoom: maxZoom);
    }
 
    //switch camera
@@ -34,6 +34,7 @@ class CameraNotifier extends StateNotifier<cameraState>
       if(state.cameras.length<2) return; //only one camera available
       var currentindex=state.currentCameraIndex;
       currentindex=(currentindex+1)%state.cameras.length;
+      controller!.dispose();
       await InitCamera(currentindex);
     }
 
