@@ -140,6 +140,7 @@ class _CameraAppState extends State<CameraApp> {
       _flashMode = newMode;
     });
   }
+
   Icon _getFlashIcon() {
     switch (_flashMode) {
       case FlashMode.off:

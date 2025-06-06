@@ -1,4 +1,6 @@
 
+import 'dart:ui';
+
 import 'package:camera/camera.dart';
 
 class cameraState
@@ -14,7 +16,7 @@ class cameraState
   final double baseZoom;
   final double minZoom;
   final double maxZoom;
-  final double aspectRatio;
+  final Offset? tapPosition;
 
   const cameraState({
     this.mode=true,
@@ -28,7 +30,7 @@ class cameraState
     this.baseZoom=1.0,
     this.minZoom=1.0,
     this.maxZoom=4.0,
-    this.aspectRatio=4/3,
+    this.tapPosition,
   });
 
   cameraState copyWith({
@@ -43,7 +45,7 @@ class cameraState
     double? baseZoom,
     double? minZoom,
     double? maxZoom,
-    double? aspectRatio,
+    Offset? tapPosition,
   }){
     return cameraState(
       mode: mode??this.mode,
@@ -57,7 +59,7 @@ class cameraState
       baseZoom: baseZoom??this.baseZoom,
       minZoom: minZoom??this.minZoom,
       maxZoom: maxZoom??this.maxZoom,
-      aspectRatio: aspectRatio??this.aspectRatio
+      tapPosition: tapPosition,
     );
   }
 }

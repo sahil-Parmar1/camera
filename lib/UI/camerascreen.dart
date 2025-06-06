@@ -17,6 +17,8 @@ class CameraScreen extends ConsumerStatefulWidget
 class _CameraScreen extends ConsumerState<CameraScreen>
 {
   final shutterScaleProvider = StateProvider<double>((ref) => 1.0);
+  final isvideocam = StateProvider<bool>((ref) => false);
+
   @override
   void initState()
   {
@@ -30,7 +32,7 @@ class _CameraScreen extends ConsumerState<CameraScreen>
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final cameraState = ref.watch(CameraProvider);
-    final controller = ref.read(CameraProvider.notifier).controller;
+    final controller = ref.watch(CameraProvider.notifier).controller;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Center(
@@ -38,7 +40,30 @@ class _CameraScreen extends ConsumerState<CameraScreen>
             ? Stack(
           children: [
                 Center(
-                  child: CameraPreview(controller), ///after that add aspect ratio here
+                  child: LayoutBuilder(
+                    builder: (context,constraints) {
+                      return GestureDetector(
+                          onTapDown: (details)=>ref.read(CameraProvider.notifier).TaptoFocus(details, constraints),  //for tap to focus square
+                          child: Stack(
+                            children: [
+                              CameraPreview(controller),
+                              //Tap focus indicator
+                              if(cameraState.tapPosition!=null)
+                                Positioned(
+                                    left: cameraState.tapPosition!.dx - 20,
+                                    top: cameraState.tapPosition!.dy - 20,
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.yellow, width: 1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    )),
+                            ],
+                          ));
+                    }
+                  ), ///after that add aspect ratio here
                 ),
 
                 // 🔝 Top row (at the top)
@@ -50,21 +75,28 @@ class _CameraScreen extends ConsumerState<CameraScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
+                      icon: ref.read(CameraProvider.notifier).getFlashIcon(),
+                      onPressed: () async{
+                        // flash toggle
+                        ref.read(CameraProvider.notifier).ToggleFlash();
+                      },
+                    ),
+                      IconButton(
                         icon: Icon(Icons.timer, color: Colors.white),
                         onPressed: () {
                           // back or close
                         },
                       ),
                       IconButton(
-                        icon: Icon(Icons.flash_on, color: Colors.white),
-                        onPressed: () {
-                          // flash toggle
+                        icon: ref.read(CameraProvider.notifier).getResolutionIcon(),
+                        onPressed: ()async {
+                          await ref.read(CameraProvider.notifier).showresolution(context);
                         },
                       ),
                       IconButton(
-                        icon: Icon(Icons.flash_on, color: Colors.white),
+                        icon: Icon(Icons.settings, color: Colors.white),
                         onPressed: () {
-                          // flash toggle
+                          // back or close
                         },
                       ),
                     ],
@@ -79,13 +111,31 @@ class _CameraScreen extends ConsumerState<CameraScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Icon(Icons.videocam, color: Colors.white),
+                  GestureDetector(
+                      onTap:()async{
+                        if(ref.read(isvideocam.notifier).state)
+                          {
+                           await ref.read(CameraProvider.notifier).CapturePhoto();
+                          }
+                        else
+                          {
+                            await ref.read(CameraProvider.notifier).StartRecording();
+                            ref.read(isvideocam.notifier).state=true;
+                          }
+                        },
+                      child: Icon(ref.watch(isvideocam)?Icons.camera:Icons.videocam, color: Colors.white)),
                   GestureDetector(
                       onTapDown: (_) {
                         ref.read(shutterScaleProvider.notifier).state = 0.8; // shrink
                       },
                       onTapUp: (_) async {
                         // Capture Photo
+                        if(ref.read(isvideocam.notifier).state)
+                          {
+                            ref.read(isvideocam.notifier).state=false;
+                            await ref.read(CameraProvider.notifier).StopRecording();
+                          }
+                        else
                         await ref.read(CameraProvider.notifier).CapturePhoto();
                         // Reset scale after tap
                         ref.read(shutterScaleProvider.notifier).state = 1.0;
@@ -103,7 +153,10 @@ class _CameraScreen extends ConsumerState<CameraScreen>
                         child: AnimatedScale(
                             scale:ref.watch(shutterScaleProvider),
                             duration: Duration(milliseconds: 100),
-                            child: Icon(Icons.circle_outlined, color: Colors.yellow, size: 64)),
+                            child: ref.watch(isvideocam)?Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Icon(Icons.stop,color: Colors.red,size: 40,),
+                            ):Icon(Icons.circle_outlined, color: Colors.yellow, size: 64)),
                       )),
                   GestureDetector(
                       onTap: ()async{
