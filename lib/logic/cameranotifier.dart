@@ -269,4 +269,17 @@ class CameraNotifier extends StateNotifier<cameraState>
      });
    }
 
+   void handleScaleStart(ScaleStartDetails details) {
+     state = state.copyWith(baseZoom: state.currentZoom);
+   }
+
+   void handleScaleUpdate(ScaleUpdateDetails details) {
+     double newZoom = state.baseZoom * details.scale;
+
+     // Clamp between min and max zoom levels
+     newZoom = newZoom.clamp(state.minZoom,state.maxZoom);
+
+     controller?.setZoomLevel(newZoom);
+     state=state.copyWith(currentZoom: newZoom);
+   }
 }

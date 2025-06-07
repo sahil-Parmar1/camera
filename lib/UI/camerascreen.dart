@@ -43,7 +43,10 @@ class _CameraScreen extends ConsumerState<CameraScreen>
                   child: LayoutBuilder(
                     builder: (context,constraints) {
                       return GestureDetector(
-                          onTapDown: (details)=>ref.read(CameraProvider.notifier).TaptoFocus(details, constraints),  //for tap to focus square
+                          onTapDown: (details)=>ref.read(CameraProvider.notifier).TaptoFocus(details, constraints),
+                          onScaleStart: ref.read(CameraProvider.notifier).handleScaleStart,
+                          onScaleUpdate: ref.read(CameraProvider.notifier).handleScaleUpdate,
+                          //for tap to focus square
                           child: Stack(
                             children: [
                               CameraPreview(controller),
