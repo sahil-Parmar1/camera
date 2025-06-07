@@ -11,7 +11,7 @@ class cameraState
   final int currentCameraIndex;
   final ResolutionPreset selectedResolution;
   final FlashMode flashMode;
-  final DateTime? timer;
+  final int? countDown;
   final double currentZoom;
   final double baseZoom;
   final double minZoom;
@@ -25,7 +25,7 @@ class cameraState
     this.currentCameraIndex=0,
     this.selectedResolution=ResolutionPreset.medium,
     this.flashMode=FlashMode.off,
-    this.timer,
+    this.countDown,
     this.currentZoom=1.0,
     this.baseZoom=1.0,
     this.minZoom=1.0,
@@ -40,7 +40,7 @@ class cameraState
     int? currentCameraIndex,
     ResolutionPreset? selectedResolution,
     FlashMode? flashMode,
-    DateTime? timer,
+    int? countDown,
     double? currentZoom,
     double? baseZoom,
     double? minZoom,
@@ -54,7 +54,7 @@ class cameraState
       currentCameraIndex: currentCameraIndex??this.currentCameraIndex,
       selectedResolution: selectedResolution??this.selectedResolution,
       flashMode: flashMode??this.flashMode,
-      timer: timer??timer,
+      countDown: countDown,
       currentZoom: currentZoom??this.currentZoom,
       baseZoom: baseZoom??this.baseZoom,
       minZoom: minZoom??this.minZoom,

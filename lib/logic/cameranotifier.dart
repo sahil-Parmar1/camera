@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:camera_app/logic/camerastate.dart';
 import 'package:flutter/cupertino.dart';
@@ -6,10 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path/path.dart';
 import 'dart:io';
+
 class CameraNotifier extends StateNotifier<cameraState>
 {
    CameraNotifier():super(const cameraState());
    CameraController? controller;
+   Timer? _countdownTimer;
 
    //initcamera
    Future<void> InitCamera(int? cameraIndex,{ResolutionPreset resolution=ResolutionPreset.medium})async
@@ -79,7 +82,8 @@ class CameraNotifier extends StateNotifier<cameraState>
           {
             if(!controller!.value.isInitialized)return;
 
-            final XFile photo=await controller!.takePicture();
+
+             final XFile photo=await controller!.takePicture();
             // Create a folder in Pictures
             final String dirPath = '/storage/emulated/0/Pictures/CameraApp';
             final Directory dir = Directory(dirPath);
@@ -242,6 +246,27 @@ class CameraNotifier extends StateNotifier<cameraState>
        default:
          return Icon(Icons.camera_alt, color: Colors.white,size: 25,);
      }
+   }
+
+   Future<void> startCountdownAndCapture(int seconds)async
+   {
+     int current=seconds;
+     state=state.copyWith(countDown: current);
+     _countdownTimer?.cancel();
+     _countdownTimer=Timer.periodic(const Duration(seconds: 1), (timer)async{
+       current-=1;
+       if(current>0)
+         {
+           state=state.copyWith(countDown: current);
+           print("\n\n\n\n seconds ===>> $current");
+         }
+       else
+         {
+           timer.cancel();
+           state=state.copyWith(countDown: null);
+           CapturePhoto();
+         }
+     });
    }
 
 }

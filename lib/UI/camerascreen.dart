@@ -18,7 +18,7 @@ class _CameraScreen extends ConsumerState<CameraScreen>
 {
   final shutterScaleProvider = StateProvider<double>((ref) => 1.0);
   final isvideocam = StateProvider<bool>((ref) => false);
-
+  int seconds=10;
   @override
   void initState()
   {
@@ -83,8 +83,9 @@ class _CameraScreen extends ConsumerState<CameraScreen>
                     ),
                       IconButton(
                         icon: Icon(Icons.timer, color: Colors.white),
-                        onPressed: () {
-                          // back or close
+                        onPressed: () async{
+                       showtimeroptions();
+
                         },
                       ),
                       IconButton(
@@ -108,7 +109,7 @@ class _CameraScreen extends ConsumerState<CameraScreen>
               bottom: 32,
               left: 0,
               right: 0,
-              child: Row(
+              child: (cameraState.countDown ?? 0) <= 0?Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   GestureDetector(
@@ -136,7 +137,14 @@ class _CameraScreen extends ConsumerState<CameraScreen>
                             await ref.read(CameraProvider.notifier).StopRecording();
                           }
                         else
-                        await ref.read(CameraProvider.notifier).CapturePhoto();
+                          {
+                            if(seconds==0)
+                              await ref.read(CameraProvider.notifier).CapturePhoto();
+                            else
+                            await ref.read(CameraProvider.notifier).startCountdownAndCapture(seconds);
+                          
+                          }
+                  
                         // Reset scale after tap
                         ref.read(shutterScaleProvider.notifier).state = 1.0;
                       },
@@ -164,7 +172,7 @@ class _CameraScreen extends ConsumerState<CameraScreen>
                       },
                       child: Icon(Icons.cameraswitch, color: Colors.white)),
                 ],
-              ),
+              ):Center(child: Text("${cameraState.countDown}",style: TextStyle(color: Colors.white,fontSize: 25),),),
             ),
               ],
             )
@@ -173,6 +181,50 @@ class _CameraScreen extends ConsumerState<CameraScreen>
     );
   }
 
+  void showtimeroptions()async
+  {
+    // Add your shutter button functionality here
+    final Map<String, int> TimerOptions = {
+      'off': 0,
+      '3 seconds': 3,
+      '5 seconds': 5,
+      '10 seconds': 10,
+      '15 seconds': 15,
+      '30 seconds': 30,
+    };
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.grey[900],
+          title: Text('Choose Timer Options',style: TextStyle(color: Colors.white,fontWeight:FontWeight.bold),),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: TimerOptions.entries.map((entry) {
+                return Card(
+                  color: seconds==entry.value?Colors.blueGrey[700]:Colors.grey[850],
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)
+                  ),
+                  child: ListTile(
+                    trailing: seconds==entry.value?Icon(Icons.check_circle,color: Colors.green,):null,
+                    title: Text(entry.key,style: TextStyle(color: Colors.white),),
+                    onTap: () {
+                      Navigator.pop(context); // Close popup
+                      seconds=entry.value??0;
+                      // Re-initialize camera
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 
