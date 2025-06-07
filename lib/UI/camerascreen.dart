@@ -1,3 +1,4 @@
+import 'package:camera_app/UI/document_scanner.dart';
 import 'package:camera_app/logic/cameranotifier.dart';
 import 'package:camera_app/logic/camerastate.dart';
 import 'package:flutter/material.dart';
@@ -101,6 +102,10 @@ class _CameraScreen extends ConsumerState<CameraScreen>
                         icon: Icon(Icons.settings, color: Colors.white),
                         onPressed: () {
                           // back or close
+                        Navigator.push(context,
+                        MaterialPageRoute(builder: (BuildContext context)=>const DocumentScannerScreen())
+                        );
+
                         },
                       ),
                     ],
