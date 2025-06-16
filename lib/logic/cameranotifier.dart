@@ -31,13 +31,18 @@ class CameraNotifier extends StateNotifier<cameraState>
          Permission.microphone
        ].request();
 
-     List<CameraDescription> _cameras=await availableCameras();
-     controller=CameraController(_cameras[cameraIndex??0], resolution,enableAudio: true);
-     await controller!.initialize();
-     double minZoom=await controller!.getMinZoomLevel();
-     double maxZoom=await controller!.getMaxZoomLevel();
-     state=state.copyWith(selectedResolution: resolution,currentCameraIndex: cameraIndex??0,iscameraready: true,cameras: _cameras,minZoom: minZoom,maxZoom: maxZoom);
-   }
+       List<CameraDescription> _cameras=await availableCameras();
+       controller=CameraController(_cameras[cameraIndex??0], resolution,enableAudio: true);
+       await controller!.initialize();
+       double minZoom=await controller!.getMinZoomLevel();
+       double maxZoom=await controller!.getMaxZoomLevel();
+       state=state.copyWith(selectedResolution: resolution,currentCameraIndex: cameraIndex??0,iscameraready: true,cameras: _cameras,minZoom: minZoom,maxZoom: maxZoom);
+     }
+     catch(e)
+     {
+       print("error in initcamera $e");
+     }
+    }
 
    Future<void> disposeCamera() async {
      try {
