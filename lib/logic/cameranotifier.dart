@@ -18,6 +18,7 @@ class CameraNotifier extends StateNotifier<cameraState>
    Future<void> InitCamera(int? cameraIndex,{ResolutionPreset resolution=ResolutionPreset.medium})async
    {
      // Request permissions
+
      await [
        Permission.camera,
        Permission.storage,

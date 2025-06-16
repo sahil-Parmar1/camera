@@ -5,15 +5,17 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_document_scanner/flutter_document_scanner.dart';
 import 'dart:io';
+import 'package:camera_app/main.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class DocumentScannerScreen extends StatefulWidget {
+class DocumentScannerScreen extends ConsumerStatefulWidget {
   const DocumentScannerScreen({super.key});
 
   @override
-  State<DocumentScannerScreen> createState() => _DocumentScannerState();
+  ConsumerState<DocumentScannerScreen> createState() => _DocumentScannerState();
 }
 
-class _DocumentScannerState extends State<DocumentScannerScreen> {
+class _DocumentScannerState extends ConsumerState<DocumentScannerScreen> {
   final _controller=DocumentScannerController();
 
   @override
@@ -44,6 +46,13 @@ class _DocumentScannerState extends State<DocumentScannerScreen> {
           // Save file
           final file = File(filePath);
           await file.writeAsBytes(imageBytes);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('image was saved..'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+
         },
       ),
     );
