@@ -17,13 +17,19 @@ class CameraNotifier extends StateNotifier<cameraState>
    //initcamera
    Future<void> InitCamera(int? cameraIndex,{ResolutionPreset resolution=ResolutionPreset.medium})async
    {
-     // Request permissions
+     //dispose when the controller already iniliazied
+     if (controller != null && controller!.value.isInitialized) {
+      disposeCamera();
+     }
 
-     await [
-       Permission.camera,
-       Permission.storage,
-       Permission.microphone
-     ].request();
+     try
+     {
+       // Request permissions
+       await [
+         Permission.camera,
+         Permission.storage,
+         Permission.microphone
+       ].request();
 
      List<CameraDescription> _cameras=await availableCameras();
      controller=CameraController(_cameras[cameraIndex??0], resolution,enableAudio: true);
