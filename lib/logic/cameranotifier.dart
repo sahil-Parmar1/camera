@@ -33,6 +33,18 @@ class CameraNotifier extends StateNotifier<cameraState>
      state=state.copyWith(selectedResolution: resolution,currentCameraIndex: cameraIndex??0,iscameraready: true,cameras: _cameras,minZoom: minZoom,maxZoom: maxZoom);
    }
 
+   Future<void> disposeCamera() async {
+     try {
+       if (controller != null && controller!.value.isInitialized) {
+         await controller!.dispose();
+       }
+       controller = null; // Clear the reference to avoid using a dead controller
+       state = state.copyWith(iscameraready: false);
+     } catch (e) {
+       print('Error disposing camera: $e');
+     }
+   }
+
    //switch camera
     Future<void> SwitchCamera()async
     {

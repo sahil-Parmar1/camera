@@ -2,6 +2,7 @@
 /// this screen use flutter_document_scanner package
 
 import 'dart:typed_data';
+import 'package:camera_app/UI/camerascreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_document_scanner/flutter_document_scanner.dart';
 import 'dart:io';
